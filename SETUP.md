@@ -6,7 +6,7 @@
 
 1. 安裝 GitHub Desktop，並登入你的 GitHub 帳號。
 2. 用 GitHub Desktop 開啟這個資料夾：
-   `/Users/wingwing/Documents/Codex/2026-05-09/https-jy6601784-cmd-github-io-my/app`
+   `/Users/wingwing/Documents/GitHub/my-travel-expense-app`
 3. 在 GitHub repo 的 `Settings` -> `Pages` 裡，把 `Source` 改成 `GitHub Actions`。
 4. 之後只要把修改推送到 `main`，GitHub 會自動更新網站：
    `https://jy6601784-cmd.github.io/my-travel-expense-app/`
