@@ -24,20 +24,20 @@ const currencies = [
 
 const defaultCategories = {
   expense: [
-    { value: "food", label: "飲食", icon: "餐" },
-    { value: "transport", label: "交通", icon: "車" },
-    { value: "shopping", label: "購物", icon: "買" },
-    { value: "investment", label: "投資", icon: "投" },
-    { value: "home", label: "居家", icon: "家" },
-    { value: "fun", label: "娛樂", icon: "樂" },
-    { value: "health", label: "健康", icon: "醫" },
-    { value: "other", label: "其他", icon: "其" },
+    { value: "food", label: "飲食", icon: "🍜" },
+    { value: "transport", label: "交通", icon: "🚇" },
+    { value: "shopping", label: "購物", icon: "🛍️" },
+    { value: "investment", label: "投資", icon: "📈" },
+    { value: "home", label: "居家", icon: "🏠" },
+    { value: "fun", label: "娛樂", icon: "🎡" },
+    { value: "health", label: "健康", icon: "💊" },
+    { value: "other", label: "其他", icon: "📌" },
   ],
   income: [
-    { value: "salary", label: "薪水", icon: "薪" },
-    { value: "bonus", label: "獎金", icon: "獎" },
-    { value: "gift", label: "禮金", icon: "禮" },
-    { value: "other_income", label: "其他收入", icon: "收" },
+    { value: "salary", label: "薪水", icon: "💼" },
+    { value: "bonus", label: "獎金", icon: "🏆" },
+    { value: "gift", label: "禮金", icon: "🎁" },
+    { value: "other_income", label: "其他收入", icon: "💰" },
   ],
 };
 
