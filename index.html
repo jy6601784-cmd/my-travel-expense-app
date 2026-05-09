@@ -1,0 +1,290 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#0f766e" />
+    <meta name="description" content="一個手機友善的個人記帳 App。" />
+    <title>我的記帳</title>
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="icon" href="./icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="./icon.svg" />
+    <link rel="stylesheet" href="./styles.css?v=9" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">個人記帳</p>
+          <h1>我的記帳</h1>
+        </div>
+        <button class="icon-button" id="settingsButton" type="button" aria-label="管理分類" title="管理分類">
+          <span aria-hidden="true">+</span>
+        </button>
+      </header>
+
+      <section class="trip-hero app-view is-active" data-view="home" aria-label="旅程概覽">
+        <div>
+          <span id="activeTripLabel">目前旅程</span>
+          <strong id="activeTripName">全部旅程</strong>
+        </div>
+        <div id="tripBudgetInfo">未設定預算</div>
+      </section>
+
+      <section class="summary app-view is-active" data-view="home" aria-label="本月摘要">
+        <div class="summary-main">
+          <span id="summaryMonthLabel">本月結餘</span>
+          <strong id="balance">MOP$0</strong>
+        </div>
+        <div class="summary-grid">
+          <div>
+            <span>收入</span>
+            <strong id="income">MOP$0</strong>
+          </div>
+          <div>
+            <span>支出</span>
+            <strong id="expense">MOP$0</strong>
+          </div>
+        </div>
+        <div id="currencySummary" class="currency-summary"></div>
+      </section>
+
+      <section class="panel add-sheet app-view" data-view="add" aria-label="新增紀錄">
+        <div class="sheet-handle"></div>
+        <div class="sheet-title">
+          <h2>記一筆</h2>
+          <button id="closeAddSheetButton" class="close-button" type="button" aria-label="關閉">×</button>
+        </div>
+        <div class="type-switch" role="group" aria-label="類型">
+          <button class="type-option is-active" data-type="expense" type="button">支出</button>
+          <button class="type-option" data-type="income" type="button">收入</button>
+        </div>
+
+        <form id="entryForm" class="entry-form">
+          <label>
+            <span>金額</span>
+            <input id="amountInput" inputmode="decimal" autocomplete="off" placeholder="例如 85" required />
+          </label>
+          <label>
+            <span>旅程</span>
+            <select id="tripInput" required></select>
+          </label>
+          <label>
+            <span>分類</span>
+            <select id="categoryInput" required></select>
+          </label>
+          <div id="categoryQuickList" class="category-quick-list"></div>
+          <label>
+            <span>幣種</span>
+            <select id="currencyInput" required></select>
+          </label>
+          <label>
+            <span>備註</span>
+            <input id="noteInput" autocomplete="off" placeholder="例如 午餐" />
+          </label>
+          <label class="receipt-field">
+            <span>收據/發票照片</span>
+            <input id="receiptInput" type="file" accept="image/*" capture="environment" />
+          </label>
+          <div id="receiptPreview" class="receipt-preview" aria-live="polite"></div>
+          <label>
+            <span>日期</span>
+            <input id="dateInput" type="date" required />
+          </label>
+          <button class="primary-button" type="submit">新增紀錄</button>
+        </form>
+      </section>
+
+      <section class="panel controls-panel app-view is-active" data-view="home" aria-label="查看紀錄">
+        <label>
+          <span>月份</span>
+          <input id="monthInput" type="month" />
+        </label>
+        <label>
+          <span>搜尋</span>
+          <input id="searchInput" autocomplete="off" placeholder="搜尋備註或分類" />
+        </label>
+        <label>
+          <span>旅程</span>
+          <select id="tripFilterInput"></select>
+        </label>
+        <button id="manageTripsButton" class="secondary-button" type="button">管理旅程</button>
+        <div class="toolbar" aria-label="紀錄篩選">
+          <button class="filter-button is-active" data-filter="month" type="button">本月</button>
+          <button class="filter-button" data-filter="all" type="button">全部</button>
+          <button class="filter-button" data-filter="expense" type="button">支出</button>
+          <button class="filter-button" data-filter="income" type="button">收入</button>
+        </div>
+      </section>
+
+      <section class="report-section app-view" data-view="stats" aria-label="分類統計">
+        <div class="section-title">
+          <h2>分類統計</h2>
+          <span id="topCategory">暫無資料</span>
+        </div>
+        <div class="stat-card-grid">
+          <div class="stat-card">
+            <span>旅程總支出</span>
+            <strong id="statsTotalExpense">MOP$0</strong>
+          </div>
+          <div class="stat-card">
+            <span>每日平均</span>
+            <strong id="statsDailyAverage">MOP$0</strong>
+          </div>
+          <div class="stat-card">
+            <span>最大單筆</span>
+            <strong id="statsLargestExpense">MOP$0</strong>
+          </div>
+        </div>
+        <div class="chart-grid">
+          <div class="chart-card">
+            <div id="donutChart" class="donut-chart"></div>
+            <div>
+              <strong>分類占比</strong>
+              <span id="donutChartLabel">本月還沒有支出</span>
+            </div>
+          </div>
+          <div class="chart-card trend-card">
+            <strong>近 6 個月</strong>
+            <div id="trendChart" class="trend-chart"></div>
+          </div>
+        </div>
+        <div id="categoryReport" class="category-report"></div>
+      </section>
+
+      <section class="records-section app-view is-active" data-view="home" aria-label="記帳紀錄">
+        <div class="section-title">
+          <h2>紀錄</h2>
+          <span id="recordCount">0 筆</span>
+        </div>
+        <ul id="recordsList" class="records-list"></ul>
+        <div id="emptyState" class="empty-state">
+          <strong>還沒有紀錄</strong>
+          <span>先新增一筆今天的花費吧。</span>
+        </div>
+      </section>
+
+      <section class="data-actions app-view" data-view="backup" aria-label="資料管理">
+        <button id="backupButton" type="button">備份資料</button>
+        <label class="import-button">
+          還原備份
+          <input id="restoreInput" type="file" accept="application/json" />
+        </label>
+      </section>
+
+      <nav class="bottom-nav" aria-label="主要導覽">
+        <button class="nav-button is-active" data-view-target="home" type="button">
+          <span aria-hidden="true">⌂</span>
+          首頁
+        </button>
+        <button class="nav-button nav-add" data-view-target="add" type="button">
+          <span aria-hidden="true">＋</span>
+          記一筆
+        </button>
+        <button class="nav-button" data-view-target="stats" type="button">
+          <span aria-hidden="true">▦</span>
+          統計
+        </button>
+        <button class="nav-button" data-view-target="backup" type="button">
+          <span aria-hidden="true">⇪</span>
+          備份
+        </button>
+      </nav>
+      <div id="toast" class="toast" role="status" aria-live="polite"></div>
+    </main>
+
+    <dialog id="categoryDialog" class="dialog">
+      <form method="dialog" class="dialog-card">
+        <div class="dialog-title">
+          <div>
+            <p class="eyebrow">分類管理</p>
+            <h2>新增自己的分類</h2>
+          </div>
+          <button class="close-button" value="cancel" aria-label="關閉" type="submit">×</button>
+        </div>
+        <div class="entry-form">
+          <label>
+            <span>類型</span>
+            <select id="customTypeInput">
+              <option value="expense">支出</option>
+              <option value="income">收入</option>
+            </select>
+          </label>
+          <label>
+            <span>圖示</span>
+            <input id="customIconInput" maxlength="2" placeholder="例：☕" />
+          </label>
+          <label>
+            <span>分類名稱</span>
+            <input id="customCategoryInput" autocomplete="off" placeholder="例如 咖啡" />
+          </label>
+          <button id="addCategoryButton" class="primary-button" type="button">新增分類</button>
+        </div>
+        <div id="customCategoryList" class="custom-category-list"></div>
+      </form>
+    </dialog>
+
+    <dialog id="tripDialog" class="dialog">
+      <form method="dialog" class="dialog-card">
+        <div class="dialog-title">
+          <div>
+            <p class="eyebrow">旅行模式</p>
+            <h2>管理旅程</h2>
+          </div>
+          <button class="close-button" value="cancel" aria-label="關閉" type="submit">×</button>
+        </div>
+        <div class="entry-form">
+          <label>
+            <span>旅程名稱</span>
+            <input id="tripNameInput" autocomplete="off" placeholder="例如 東京 2026" />
+          </label>
+          <label>
+            <span>預算 MOP</span>
+            <input id="tripBudgetInput" inputmode="decimal" autocomplete="off" placeholder="例如 8000" />
+          </label>
+          <label>
+            <span>封面色</span>
+            <select id="tripThemeInput">
+              <option value="ocean">海島藍</option>
+              <option value="city">城市夜景</option>
+              <option value="sunset">日落橙</option>
+              <option value="forest">森林綠</option>
+            </select>
+          </label>
+          <button id="addTripButton" class="primary-button" type="button">新增旅程</button>
+        </div>
+        <div id="tripList" class="custom-category-list"></div>
+      </form>
+    </dialog>
+
+    <dialog id="receiptDialog" class="dialog receipt-dialog">
+      <form method="dialog" class="dialog-card">
+        <div class="dialog-title">
+          <div>
+            <p class="eyebrow">收據/發票</p>
+            <h2 id="receiptDialogTitle">照片預覽</h2>
+          </div>
+          <button class="close-button" value="cancel" aria-label="關閉" type="submit">×</button>
+        </div>
+        <img id="receiptDialogImage" class="receipt-full-image" alt="收據或發票照片" />
+      </form>
+    </dialog>
+
+    <template id="recordTemplate">
+      <li class="record-item">
+        <div class="record-icon"></div>
+        <div class="record-main">
+          <strong class="record-title"></strong>
+          <span class="record-meta"></span>
+        </div>
+        <button class="receipt-thumb" type="button" aria-label="查看收據照片"></button>
+        <div class="record-side">
+          <strong class="record-amount"></strong>
+          <button class="delete-button" type="button" aria-label="刪除紀錄">×</button>
+        </div>
+      </li>
+    </template>
+
+    <script src="./app.js?v=9" defer></script>
+  </body>
+</html>

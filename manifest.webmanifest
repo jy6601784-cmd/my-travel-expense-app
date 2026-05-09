@@ -1,0 +1,17 @@
+{
+  "name": "我的記帳",
+  "short_name": "記帳",
+  "description": "一個簡單、手機友善的個人記帳 App。",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#eef6f3",
+  "theme_color": "#0f766e",
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
