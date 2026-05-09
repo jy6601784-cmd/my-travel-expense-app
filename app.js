@@ -427,9 +427,9 @@ function renderCategoryQuickList() {
   categoryQuickList.innerHTML = getCategories(state.type)
     .map(
       (item) => `
-        <button class="${item.value === selected ? "is-active" : ""}" type="button" data-category="${escapeHtml(item.value)}">
-          <span>${escapeHtml(item.icon || item.label.slice(0, 1))}</span>
-          ${escapeHtml(item.label)}
+        <button class="${item.value === selected ? "is-active" : ""}" type="button" data-category="${escapeHtml(item.value)}" aria-label="${escapeHtml(item.label)}" title="${escapeHtml(item.label)}">
+          <span class="category-icon" aria-hidden="true">${escapeHtml(item.icon || item.label.slice(0, 1))}</span>
+          <span class="category-name">${escapeHtml(item.label)}</span>
         </button>
       `
     )
