@@ -1,4 +1,4 @@
-const cacheName = "personal-expense-tracker-v12";
+const cacheName = "personal-expense-tracker-v14";
 const appShell = ["./", "./index.html", "./styles.css", "./app.js", "./manifest.webmanifest", "./icon.svg"];
 
 self.addEventListener("install", (event) => {

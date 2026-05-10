@@ -4,8 +4,8 @@
   "description": "一個簡單、手機友善的個人記帳 App。",
   "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#eef6f3",
-  "theme_color": "#0f766e",
+  "background_color": "#f4f8fb",
+  "theme_color": "#0891b2",
   "icons": [
     {
       "src": "./icon.svg",

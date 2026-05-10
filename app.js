@@ -46,6 +46,7 @@ const state = {
   filter: "month",
   month: new Date().toISOString().slice(0, 7),
   query: "",
+  view: "home",
   selectedTrip: "all",
   trips: loadTrips(),
   records: [],
@@ -74,6 +75,7 @@ const searchInput = document.querySelector("#searchInput");
 const tripFilterInput = document.querySelector("#tripFilterInput");
 const categoryReport = document.querySelector("#categoryReport");
 const topCategory = document.querySelector("#topCategory");
+const monthlyInsight = document.querySelector("#monthlyInsight");
 const donutChart = document.querySelector("#donutChart");
 const donutChartLabel = document.querySelector("#donutChartLabel");
 const trendChart = document.querySelector("#trendChart");
@@ -475,13 +477,22 @@ function render() {
   balance.textContent = formatMoney(defaultTotals.income - defaultTotals.expense, defaultCurrency);
   summaryMonthLabel.textContent = `${formatMonth(state.month)}結餘`;
   recordCount.textContent = `${visibleRecords.length} 筆`;
-  emptyState.classList.toggle("is-hidden", visibleRecords.length > 0);
+  renderEmptyState(visibleRecords.length);
 }
 
 function renderRecords(records) {
   recordsList.innerHTML = "";
+  let currentDate = "";
 
   records.forEach((record) => {
+    if (record.date !== currentDate) {
+      currentDate = record.date;
+      const dateItem = document.createElement("li");
+      dateItem.className = "record-date-group";
+      dateItem.textContent = formatDateGroup(record.date);
+      recordsList.appendChild(dateItem);
+    }
+
     const item = template.content.firstElementChild.cloneNode(true);
     const icon = item.querySelector(".record-icon");
     const title = item.querySelector(".record-title");
@@ -527,6 +538,7 @@ function renderReport(records) {
 
   const rows = [...byCategory.values()].sort((a, b) => b.amount - a.amount);
   topCategory.textContent = rows[0] ? `最多：${rows[0].label}` : "暫無資料";
+  renderMonthlyInsight(rows, totalExpense);
   renderDonutChart(rows, totalExpense);
 
   if (rows.length === 0) {
@@ -551,6 +563,18 @@ function renderReport(records) {
     .join("");
 }
 
+function renderMonthlyInsight(rows, totalExpense) {
+  if (!monthlyInsight) return;
+
+  if (!rows.length || !totalExpense) {
+    monthlyInsight.textContent = "本月還沒有支出紀錄。";
+    return;
+  }
+
+  const top = rows[0];
+  monthlyInsight.textContent = `本月${top.label}佔最多，已花 ${formatMoney(top.amount, defaultCurrency)}。`;
+}
+
 function renderTripHero(monthlyRecords) {
   const trip = state.trips.find((item) => item.id === state.selectedTrip);
   const expenses = monthlyRecords
@@ -558,12 +582,13 @@ function renderTripHero(monthlyRecords) {
     .reduce((sum, record) => sum + Number(record.amount), 0);
   const budget = trip?.budget || 0;
   const percent = budget ? Math.min(100, Math.round((expenses / budget) * 100)) : 0;
+  const monthlyCount = monthlyRecords.length;
 
   activeTripLabel.textContent = state.selectedTrip === "all" ? "目前範圍" : "目前旅程";
   activeTripName.textContent = trip?.name || "全部旅程";
   tripBudgetInfo.innerHTML = budget
-    ? `<span>${formatMoney(expenses, defaultCurrency)} / ${formatMoney(budget, defaultCurrency)}</span><div><i style="width:${percent}%"></i></div>`
-    : "未設定預算";
+    ? `<span>${formatMoney(expenses, defaultCurrency)} / ${formatMoney(budget, defaultCurrency)}</span><small>${percent}% 預算</small><div><i style="width:${percent}%"></i></div>`
+    : `<span>${monthlyCount} 筆紀錄</span><small>${formatMonth(state.month)}</small>`;
 
   const theme = trip?.theme || "ocean";
   document.querySelector(".trip-hero").dataset.theme = state.selectedTrip === "all" ? "ocean" : theme;
@@ -664,6 +689,7 @@ function renderCustomCategories() {
 
 function setActiveView(view) {
   const nextView = view === "add" ? "add" : view;
+  state.view = nextView;
   viewSections.forEach((section) => {
     section.classList.toggle("is-active", section.dataset.view === nextView);
   });
@@ -676,6 +702,41 @@ function setActiveView(view) {
   if (nextView === "add") {
     amountInput.focus();
   }
+}
+
+function renderEmptyState(count) {
+  emptyState.classList.toggle("is-hidden", count > 0);
+  const title = emptyState.querySelector("strong");
+  const body = emptyState.querySelector("span");
+  if (!title || !body) return;
+
+  if (state.query) {
+    title.textContent = "找不到相符紀錄";
+    body.textContent = "換個關鍵字，或先清除搜尋。";
+    return;
+  }
+
+  if (state.selectedTrip !== "all") {
+    const trip = state.trips.find((item) => item.id === state.selectedTrip);
+    title.textContent = `${trip?.name || "這個旅程"}還沒有紀錄`;
+    body.textContent = "記下第一筆花費，旅程預算才會開始有感。";
+    return;
+  }
+
+  if (state.filter === "income") {
+    title.textContent = "還沒有收入紀錄";
+    body.textContent = "收到薪水、退款或禮金時可以記在這裡。";
+    return;
+  }
+
+  if (state.filter === "expense") {
+    title.textContent = "還沒有支出紀錄";
+    body.textContent = "下一筆餐費、車資或購物都可以快速記下。";
+    return;
+  }
+
+  title.textContent = "還沒有紀錄";
+  body.textContent = "先新增一筆今天的花費吧。";
 }
 
 function renderTripList() {
@@ -712,6 +773,10 @@ function getVisibleRecords(records = state.records) {
       if (!state.query) return true;
       const text = `${record.note} ${record.categoryLabel} ${record.amount}`.toLowerCase();
       return text.includes(state.query);
+    })
+    .sort((a, b) => {
+      if (a.date !== b.date) return b.date.localeCompare(a.date);
+      return String(b.createdAt || "").localeCompare(String(a.createdAt || ""));
     });
 }
 
@@ -771,6 +836,23 @@ function formatDate(value) {
     month: "short",
     day: "numeric",
   }).format(new Date(`${value}T00:00:00`));
+}
+
+function formatDateGroup(value) {
+  const today = new Date();
+  const target = new Date(`${value}T00:00:00`);
+  const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const diffDays = Math.round((target - startOfToday) / 86400000);
+
+  if (diffDays === 0) return "今天";
+  if (diffDays === -1) return "昨天";
+  if (diffDays === 1) return "明天";
+
+  return new Intl.DateTimeFormat("zh-Hant-HK", {
+    month: "long",
+    day: "numeric",
+    weekday: "short",
+  }).format(target);
 }
 
 function formatMonth(value) {
