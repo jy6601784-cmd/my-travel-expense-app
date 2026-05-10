@@ -56,6 +56,7 @@ state.records = loadRecords();
 
 const amountInput = document.querySelector("#amountInput");
 const tripInput = document.querySelector("#tripInput");
+const payerInput = document.querySelector("#payerInput");
 const categoryInput = document.querySelector("#categoryInput");
 const categoryQuickList = document.querySelector("#categoryQuickList");
 const currencyInput = document.querySelector("#currencyInput");
@@ -82,6 +83,7 @@ const trendChart = document.querySelector("#trendChart");
 const statsTotalExpense = document.querySelector("#statsTotalExpense");
 const statsDailyAverage = document.querySelector("#statsDailyAverage");
 const statsLargestExpense = document.querySelector("#statsLargestExpense");
+const splitSummary = document.querySelector("#splitSummary");
 const currencySummary = document.querySelector("#currencySummary");
 const summaryMonthLabel = document.querySelector("#summaryMonthLabel");
 const activeTripName = document.querySelector("#activeTripName");
@@ -99,6 +101,7 @@ const receiptDialogImage = document.querySelector("#receiptDialogImage");
 const tripDialog = document.querySelector("#tripDialog");
 const tripNameInput = document.querySelector("#tripNameInput");
 const tripBudgetInput = document.querySelector("#tripBudgetInput");
+const tripPeopleInput = document.querySelector("#tripPeopleInput");
 const tripThemeInput = document.querySelector("#tripThemeInput");
 const tripList = document.querySelector("#tripList");
 const template = document.querySelector("#recordTemplate");
@@ -160,12 +163,14 @@ entryForm.addEventListener("submit", async (event) => {
   }
 
   const selected = findCategory(state.type, categoryInput.value);
+  const tripId = tripInput.value || defaultTripId;
   const record = {
     id: globalThis.crypto?.randomUUID ? crypto.randomUUID() : String(Date.now()),
     type: state.type,
     amount: Math.round(amount * 100) / 100,
     currency: currencyInput.value || defaultCurrency,
-    tripId: tripInput.value || defaultTripId,
+    tripId,
+    payer: payerInput.value || getTripPeople(tripId)[0],
     category: selected.value,
     categoryLabel: selected.label,
     icon: selected.icon,
@@ -183,6 +188,7 @@ entryForm.addEventListener("submit", async (event) => {
   dateInput.value = new Date().toISOString().slice(0, 10);
   currencyInput.value = defaultCurrency;
   tripInput.value = state.selectedTrip === "all" ? defaultTripId : state.selectedTrip;
+  renderPayers();
   renderCategories();
   render();
   setActiveView("home");
@@ -246,8 +252,11 @@ tripFilterInput.addEventListener("change", () => {
   if (state.selectedTrip !== "all") {
     tripInput.value = state.selectedTrip;
   }
+  renderPayers();
   render();
 });
+
+tripInput.addEventListener("change", renderPayers);
 
 document.querySelector("#manageTripsButton").addEventListener("click", () => {
   renderTripList();
@@ -299,6 +308,7 @@ document.querySelector("#addTripButton").addEventListener("click", () => {
     id: `trip_${Date.now()}`,
     name,
     budget: Number(String(tripBudgetInput.value).replace(",", ".")) || 0,
+    people: parsePeople(tripPeopleInput.value),
     theme: tripThemeInput.value || "ocean",
     createdAt: new Date().toISOString(),
   };
@@ -306,6 +316,7 @@ document.querySelector("#addTripButton").addEventListener("click", () => {
   saveTrips();
   tripNameInput.value = "";
   tripBudgetInput.value = "";
+  tripPeopleInput.value = "";
   tripThemeInput.value = "ocean";
   renderTrips();
   renderTripList();
@@ -358,6 +369,7 @@ function normalizeRecord(record) {
     category: record.category || selected.value,
     categoryLabel: record.categoryLabel || selected.label,
     icon: record.icon || selected.icon,
+    payer: record.payer || "我",
     note: record.note || "",
     date: record.date,
     receiptImage: record.receiptImage || null,
@@ -374,19 +386,20 @@ function loadTrips() {
     const saved = JSON.parse(localStorage.getItem(tripsKey) || "[]");
     const trips = Array.isArray(saved) ? saved : [];
     return [
-      { id: defaultTripId, name: "日常", budget: 0, theme: "ocean", createdAt: "default" },
+      { id: defaultTripId, name: "日常", budget: 0, people: ["我"], theme: "ocean", createdAt: "default" },
       ...trips
         .filter((trip) => trip?.id && trip?.name && trip.id !== defaultTripId)
         .map((trip) => ({
           id: trip.id,
           name: trip.name,
           budget: Number(trip.budget) || 0,
+          people: normalizePeople(trip.people),
           theme: trip.theme || "ocean",
           createdAt: trip.createdAt || new Date().toISOString(),
         })),
     ];
   } catch {
-    return [{ id: defaultTripId, name: "日常", budget: 0, theme: "ocean", createdAt: "default" }];
+    return [{ id: defaultTripId, name: "日常", budget: 0, people: ["我"], theme: "ocean", createdAt: "default" }];
   }
 }
 
@@ -456,6 +469,16 @@ function renderTrips() {
     ...state.trips.map((trip) => `<option value="${escapeHtml(trip.id)}">${escapeHtml(trip.name)}</option>`),
   ].join("");
   tripFilterInput.value = state.selectedTrip;
+  renderPayers();
+}
+
+function renderPayers() {
+  const people = getTripPeople(tripInput.value || defaultTripId);
+  const current = payerInput.value;
+  payerInput.innerHTML = people
+    .map((person) => `<option value="${escapeHtml(person)}">${escapeHtml(person)}</option>`)
+    .join("");
+  payerInput.value = people.includes(current) ? current : people[0];
 }
 
 function render() {
@@ -470,6 +493,7 @@ function render() {
   renderTripHero(monthlyRecords);
   renderStatCards(scopedRecords);
   renderTrendChart(scopedRecords);
+  renderSplitSummary(monthlyRecords);
   renderCurrencySummary(totalsByCurrency);
 
   income.textContent = formatMoney(defaultTotals.income, defaultCurrency);
@@ -504,7 +528,7 @@ function renderRecords(records) {
     icon.textContent = record.icon || record.categoryLabel.slice(0, 1);
     icon.classList.toggle("expense", record.type === "expense");
     title.textContent = record.note || record.categoryLabel;
-    meta.textContent = `${record.categoryLabel} · ${record.currency || defaultCurrency} · ${formatDate(record.date)}`;
+    meta.textContent = `${record.categoryLabel} · ${record.currency || defaultCurrency} · ${record.payer || "我"}付款 · ${formatDate(record.date)}`;
     amount.textContent = `${record.type === "expense" ? "-" : "+"}${formatMoney(record.amount, record.currency)}`;
     amount.className = `record-amount ${record.type}`;
     if (record.receiptImage) {
@@ -605,6 +629,137 @@ function renderStatCards(records) {
   statsTotalExpense.textContent = formatMoney(total, defaultCurrency);
   statsDailyAverage.textContent = formatMoney(total / uniqueDays, defaultCurrency);
   statsLargestExpense.textContent = formatMoney(largest, defaultCurrency);
+}
+
+function renderSplitSummary(records) {
+  if (!splitSummary) return;
+
+  if (state.selectedTrip === "all") {
+    splitSummary.innerHTML = `<div class="mini-empty">選擇一個旅程後，就可以查看同行分帳。</div>`;
+    return;
+  }
+
+  const trip = state.trips.find((item) => item.id === state.selectedTrip);
+  const people = getTripPeople(state.selectedTrip);
+  const expenseRecords = records.filter(
+    (record) => record.type === "expense" && (record.currency || defaultCurrency) === defaultCurrency
+  );
+  const total = expenseRecords.reduce((sum, record) => sum + Number(record.amount), 0);
+
+  if (!trip || people.length <= 1) {
+    splitSummary.innerHTML = `<div class="mini-empty">這個旅程只有你一個人，暫時不需要分帳。</div>`;
+    return;
+  }
+
+  if (!total) {
+    splitSummary.innerHTML = `<div class="mini-empty">這個月份還沒有可分帳的 MOP 支出。</div>`;
+    return;
+  }
+
+  const share = total / people.length;
+  const paidByPerson = new Map(people.map((person) => [person, 0]));
+  expenseRecords.forEach((record) => {
+    const payer = people.includes(record.payer) ? record.payer : people[0];
+    paidByPerson.set(payer, (paidByPerson.get(payer) || 0) + Number(record.amount));
+  });
+
+  const rows = people.map((person) => {
+    const paid = paidByPerson.get(person) || 0;
+    const balanceValue = paid - share;
+    const status = Math.abs(balanceValue) < 0.01 ? "剛好打平" : balanceValue > 0 ? "應收" : "應付";
+    return { person, paid, balanceValue, status };
+  });
+  const transferRows = buildSettlementTransfers(rows);
+
+  const me = rows.find((row) => row.person === "我");
+  const collectRows = rows.filter((row) => row.person !== "我" && row.balanceValue < -0.01);
+  let collectText = "目前大家接近打平。";
+  if (me?.balanceValue > 0.01 && collectRows.length) {
+    collectText = `你可向 ${collectRows
+      .map((row) => `${escapeHtml(row.person)} 收 ${formatMoney(Math.abs(row.balanceValue), defaultCurrency)}`)
+      .join("、")}。`;
+  } else if (me?.balanceValue < -0.01) {
+    collectText = `你目前應付 ${formatMoney(Math.abs(me.balanceValue), defaultCurrency)}。`;
+  }
+
+  splitSummary.innerHTML = `
+    <div class="split-card">
+      <div class="split-head">
+        <div>
+          <span>同行分帳</span>
+          <strong>${escapeHtml(trip.name)} · 每人 ${formatMoney(share, defaultCurrency)}</strong>
+        </div>
+        <em>${people.length} 人</em>
+      </div>
+      <p>${collectText}</p>
+      <div class="split-list">
+        ${rows
+          .map(
+            (row) => `
+              <div class="split-row">
+                <span>${escapeHtml(row.person)}</span>
+                <small>已付 ${formatMoney(row.paid, defaultCurrency)}</small>
+                <strong class="${row.balanceValue > 0.01 ? "positive" : row.balanceValue < -0.01 ? "negative" : ""}">
+                  ${row.status}${Math.abs(row.balanceValue) < 0.01 ? "" : ` ${formatMoney(Math.abs(row.balanceValue), defaultCurrency)}`}
+                </strong>
+              </div>
+            `
+          )
+          .join("")}
+      </div>
+      <div class="transfer-list">
+        <strong>轉帳建議</strong>
+        ${
+          transferRows.length
+            ? transferRows
+                .map(
+                  (transfer) => `
+                    <div class="transfer-row">
+                      <span>${escapeHtml(transfer.from)}</span>
+                      <small>付給</small>
+                      <span>${escapeHtml(transfer.to)}</span>
+                      <em>${formatMoney(transfer.amount, defaultCurrency)}</em>
+                    </div>
+                  `
+                )
+                .join("")
+            : `<div class="transfer-empty">不用轉帳，大家已經打平。</div>`
+        }
+      </div>
+    </div>
+  `;
+}
+
+function buildSettlementTransfers(rows) {
+  const debtors = rows
+    .filter((row) => row.balanceValue < -0.01)
+    .map((row) => ({ person: row.person, amount: roundMoney(Math.abs(row.balanceValue)) }))
+    .sort((a, b) => b.amount - a.amount);
+  const creditors = rows
+    .filter((row) => row.balanceValue > 0.01)
+    .map((row) => ({ person: row.person, amount: roundMoney(row.balanceValue) }))
+    .sort((a, b) => b.amount - a.amount);
+  const transfers = [];
+  let debtorIndex = 0;
+  let creditorIndex = 0;
+
+  while (debtorIndex < debtors.length && creditorIndex < creditors.length) {
+    const debtor = debtors[debtorIndex];
+    const creditor = creditors[creditorIndex];
+    const amount = roundMoney(Math.min(debtor.amount, creditor.amount));
+
+    if (amount > 0) {
+      transfers.push({ from: debtor.person, to: creditor.person, amount });
+    }
+
+    debtor.amount = roundMoney(debtor.amount - amount);
+    creditor.amount = roundMoney(creditor.amount - amount);
+
+    if (debtor.amount <= 0.01) debtorIndex += 1;
+    if (creditor.amount <= 0.01) creditorIndex += 1;
+  }
+
+  return transfers;
 }
 
 function renderDonutChart(rows, totalExpense) {
@@ -744,9 +899,10 @@ function renderTripList() {
     .map((trip) => {
       const count = state.records.filter((record) => (record.tripId || defaultTripId) === trip.id).length;
       const locked = trip.id === defaultTripId;
+      const people = getTripPeople(trip.id).join("、");
       return `
         <div class="custom-category-item">
-          <span>${escapeHtml(trip.name)} · ${count} 筆</span>
+          <span>${escapeHtml(trip.name)} · ${count} 筆<br><small>${escapeHtml(people)}</small></span>
           <button type="button" data-trip="${escapeHtml(trip.id)}" ${locked ? "disabled" : ""}>
             ${locked ? "預設" : "刪除"}
           </button>
@@ -754,6 +910,29 @@ function renderTripList() {
       `;
     })
     .join("");
+}
+
+function getTripPeople(tripId) {
+  const trip = state.trips.find((item) => item.id === tripId) || state.trips[0];
+  return normalizePeople(trip?.people);
+}
+
+function normalizePeople(people) {
+  if (!Array.isArray(people)) return ["我"];
+  const cleaned = people.map((person) => String(person).trim()).filter(Boolean);
+  return uniquePeople(["我", ...(cleaned.length ? cleaned : [])]);
+}
+
+function parsePeople(value) {
+  const people = String(value || "")
+    .split(/[,\n，、]/)
+    .map((person) => person.trim())
+    .filter(Boolean);
+  return uniquePeople(["我", ...people]);
+}
+
+function uniquePeople(people) {
+  return [...new Set(people)].slice(0, 12);
 }
 
 function getTripScopedRecords() {
@@ -862,6 +1041,10 @@ function formatMonth(value) {
   }).format(new Date(`${value}-01T00:00:00`));
 }
 
+function roundMoney(value) {
+  return Math.round(Number(value) * 100) / 100;
+}
+
 function renderReceiptPreview(message = "") {
   if (message) {
     receiptPreview.innerHTML = `<span>${escapeHtml(message)}</span>`;
@@ -944,6 +1127,7 @@ function restoreData(event) {
             id: trip.id,
             name: trip.name,
             budget: Number(trip.budget) || 0,
+            people: normalizePeople(trip.people),
             theme: trip.theme || "ocean",
             createdAt: trip.createdAt || new Date().toISOString(),
           })),

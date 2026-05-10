@@ -9,7 +9,7 @@
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="icon" href="./icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="./icon.svg" />
-    <link rel="stylesheet" href="./styles.css?v=14" />
+    <link rel="stylesheet" href="./styles.css?v=21" />
   </head>
   <body>
     <main class="app-shell">
@@ -70,6 +70,10 @@
           <label>
             <span>旅程</span>
             <select id="tripInput" required></select>
+          </label>
+          <label>
+            <span>付款人</span>
+            <select id="payerInput" required></select>
           </label>
           <label>
             <span>分類</span>
@@ -152,6 +156,7 @@
             <div id="trendChart" class="trend-chart"></div>
           </div>
         </div>
+        <div id="splitSummary" class="split-summary"></div>
         <div id="categoryReport" class="category-report"></div>
       </section>
 
@@ -261,6 +266,10 @@
             <input id="tripBudgetInput" inputmode="decimal" autocomplete="off" placeholder="例如 8000" />
           </label>
           <label>
+            <span>同行者</span>
+            <input id="tripPeopleInput" autocomplete="off" placeholder="例如 Wing, Alex, May" />
+          </label>
+          <label>
             <span>封面色</span>
             <select id="tripThemeInput">
               <option value="ocean">海島藍</option>
@@ -303,6 +312,6 @@
       </li>
     </template>
 
-    <script src="./app.js?v=14" defer></script>
+    <script src="./app.js?v=21" defer></script>
   </body>
 </html>
